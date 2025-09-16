@@ -3,268 +3,81 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Pomodoro Widget</title>
+<title>Pomodoro Mini (with Controls)</title>
 <style>
-  :root{
-    --bg:#0b0c10; --card:#11131a; --text:#e6e7ea; --muted:#9aa1aa; --accent:#7c3aed; --accent-2:#22c55e; --danger:#ef4444;
-    --ring: rgba(124, 58, 237, 0.25);
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; padding: 0; }
+  body{
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    background:#0b0c10; color:#e6e7ea; display:flex; align-items:center; justify-content:center;
   }
-  [data-theme="light"]{ --bg:#f7f7fb; --card:#ffffff; --text:#111317; --muted:#67707a; --accent:#7c3aed; --accent-2:#16a34a; --danger:#dc2626; --ring: rgba(124,58,237,.22); }
-  *{ box-sizing:border-box; }
-  html,body{ height:100%; }
-  body{ margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
-        background:var(--bg); color:var(--text); display:flex; align-items:center; justify-content:center; }
-  .wrap{ width:min(720px, 100%); padding:clamp(12px,2vw,24px); }
-  .card{ background:var(--card); border-radius:20px; box-shadow: 0 10px 30px rgba(0,0,0,.2); padding:clamp(16px,3vw,28px); }
-  header{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
-  header h1{ font-size: clamp(16px, 2.2vw, 20px); margin:0; font-weight:700; letter-spacing:.2px; }
-  .muted{ color:var(--muted); font-size:14px; }
-  .row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-  .pill{ border:1px solid rgba(124,58,237,.25); color:var(--text); background:transparent; padding:8px 12px; border-radius:999px; cursor:pointer; font-weight:600; font-size:14px; }
-  .pill[aria-pressed="true"]{ background:var(--accent); border-color:var(--accent); }
-  .timer{ display:grid; place-items:center; padding:10px 0 2px; }
-  .big{ font-variant-numeric:tabular-nums; font-size: clamp(48px, 12vw, 96px); font-weight:800; letter-spacing:1px; }
-  .sub{ font-size:13px; color:var(--muted); margin-top:4px; }
-  .controls{ display:flex; gap:10px; justify-content:center; margin-top:14px; flex-wrap:wrap; }
-  button.btn{ appearance:none; border:none; outline:none; cursor:pointer; border-radius:14px; padding:12px 16px; font-weight:700; font-size:14px; }
-  .btn-primary{ background:var(--accent); color:white; box-shadow:0 0 0 0 var(--ring); }
-  .btn-primary:focus{ box-shadow:0 0 0 6px var(--ring); }
-  .btn-ghost{ background:rgba(255,255,255,0.06); color:var(--text); }
-  .btn-danger{ background: var(--danger); color:white; }
-  .grid{ display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center; }
-  details{ margin-top:14px; }
-  details[open] summary{ margin-bottom:8px; }
-  summary{ cursor:pointer; list-style:none; }
-  summary::-webkit-details-marker{ display:none; }
-  .fieldset{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
-  .fieldset .col-2{ grid-column:span 2; }
-  .fieldset .col-4{ grid-column:span 4; }
-  label{ font-size:12px; color:var(--muted); display:block; margin-bottom:4px; }
-  input, select{ width:100%; padding:10px 12px; border-radius:10px; border:1px solid rgba(124,58,237,.25); background:transparent; color:var(--text); font-weight:600; }
-  .progress{ width:min(380px, 70vw); aspect-ratio:1/1; position:relative; }
-  .progress svg{ width:100%; height:100%; transform:rotate(-90deg); }
-  .progress .label{ position:absolute; inset:0; display:grid; place-items:center; }
-  .badges{ display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin-top:10px; }
-  .badge{ font-size:12px; color:var(--muted); background:rgba(255,255,255,.05); padding:6px 8px; border-radius:999px; }
-  .hidden{ display:none; }
-  @media (max-width:420px){ .fieldset{ grid-template-columns:repeat(2,1fr);} }
+  :root{
+    --diam: 300px;       /* total widget size (square) */
+    --ring: 0.04;        /* ring thickness as % of diameter (0.02–0.10) */
+    --fs: 0.22;          /* big time font scale (0.16–0.30) */
+    --accent:#7c3aed; --text:#e6e7ea; --muted:#9aa1aa; --danger:#ef4444;
+  }
+  [data-theme="light"]{ --text:#111317; --muted:#67707a; }
+
+  .shell{
+    width: var(--diam);
+    height: var(--diam);
+    position: relative;
+    margin:0 auto;
+    background: transparent; /* transparent for Notion */
+  }
+
+  /* DIAL AREA */
+  .dial{
+    position:absolute; inset:0;
+    padding: 8px 8px 54px 8px; /* bottom space for buttons */
+  }
+  .ring{
+    width: 100%; height: 100%;
+    position: relative;
+    cursor: pointer;
+  }
+  .ring svg{ width:100%; height:100%; display:block; transform: rotate(-90deg); }
+  .label{
+    position:absolute; inset:0;
+    display:grid; place-items:center;
+    text-align:center; pointer-events:none;
+    padding: 10%; /* safe margin from ring */
+  }
+  .big{
+    margin:0; line-height:1; font-variant-numeric: tabular-nums;
+    font-weight:800; letter-spacing:.5px;
+    font-size: clamp(18px, calc(var(--diam) * var(--fs)), 64px);
+    color:var(--text);
+  }
+  .sub{ margin-top:6px; color:var(--muted); font-size: clamp(10px, calc(var(--diam) * 0.06), 14px); }
+
+  /* MINI CONTROLS: fixed inside the square at bottom */
+  .controls{
+    position:absolute; left:0; right:0; bottom:8px;
+    display:flex; gap:6px; justify-content:center; align-items:center;
+    padding:0 8px;
+  }
+  .btn{ border:none; border-radius:10px; padding:8px 10px; font-weight:700; font-size:12px; cursor:pointer; }
+  .primary{ background:var(--accent); color:#fff; }
+  .ghost{ background:rgba(255,255,255,0.10); color:var(--text); }
+  .danger{ background:var(--danger); color:#fff; }
+
+  /* Hide controls entirely if controls=0 */
+  .no-controls .controls{ display:none; }
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="card" role="region" aria-label="Pomodoro Timer">
-      <header>
-        <h1 id="title">Pomodoro</h1>
-        <div class="row">
-          <button class="pill" id="mode-work" aria-pressed="true">Work</button>
-          <button class="pill" id="mode-short">Short break</button>
-          <button class="pill" id="mode-long">Long break</button>
-        </div>
-      </header>
-
-      <div class="timer">
-        <div class="progress" aria-hidden="true">
-          <svg viewBox="0 0 120 120">
-            <circle cx="60" cy="60" r="54" stroke="rgba(255,255,255,.08)" stroke-width="8" fill="none" />
-            <circle id="arc" cx="60" cy="60" r="54" stroke="var(--accent)" stroke-width="8" stroke-linecap="round" fill="none" stroke-dasharray="339.292" stroke-dashoffset="0"/>
-          </svg>
-          <div class="label">
-            <div class="big" id="time">25:00</div>
-            <div class="sub" id="subtext">Cycle 1/4</div>
-          </div>
-        </div>
-        <div class="controls">
-          <button class="btn btn-primary" id="toggle">Start</button>
-          <button class="btn btn-ghost" id="skip">Skip</button>
-          <button class="btn btn-danger" id="reset">Reset</button>
-        </div>
-        <div class="badges">
-          <span class="badge" id="autoBadge">Auto‑advance: on</span>
-          <span class="badge" id="soundBadge">Sound: on</span>
-          <span class="badge" id="notiBadge">Notifications: off</span>
+  <div class="shell" id="root">
+    <div class="dial">
+      <div class="ring" id="dial" aria-label="Timer dial (click to start/pause; double-click to reset)">
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+          <circle id="track" cx="60" cy="60" r="54" stroke="rgba(255,255,255,.12)" fill="none" />
+          <circle id="arc"   cx="60" cy="60" r="54" stroke="var(--accent)" fill="none" stroke-linecap="round"/>
+        </svg>
+        <div class="label">
+          <div class="big" id="time">25:00</div>
+          <div class="sub" id="subtext">Cycle 1/4</div>
         </div>
       </div>
-
-      <details id="settings">
-        <summary class="muted">Settings</summary>
-        <div class="fieldset">
-          <div>
-            <label>Work (min)</label>
-            <input type="number" id="set-work" min="1" max="180" />
-          </div>
-          <div>
-            <label>Short break (min)</label>
-            <input type="number" id="set-short" min="1" max="60" />
-          </div>
-          <div>
-            <label>Long break (min)</label>
-            <input type="number" id="set-long" min="1" max="60" />
-          </div>
-          <div>
-            <label>Cycles to long break</label>
-            <input type="number" id="set-cycles" min="1" max="12" />
-          </div>
-          <div class="col-2">
-            <label>Auto‑advance</label>
-            <select id="set-auto">
-              <option value="1">On</option>
-              <option value="0">Off</option>
-            </select>
-          </div>
-          <div class="col-2">
-            <label>Sound</label>
-            <select id="set-sound">
-              <option value="1">On</option>
-              <option value="0">Off</option>
-            </select>
-          </div>
-          <div class="col-2">
-            <label>Theme</label>
-            <select id="set-theme">
-              <option value="auto">Auto</option>
-              <option value="dark">Dark</option>
-              <option value="light">Light</option>
-            </select>
-          </div>
-          <div class="col-2">
-            <label>Title</label>
-            <input id="set-title" placeholder="e.g., Deep Work" />
-          </div>
-          <div class="col-4">
-            <button class="btn btn-primary" id="save">Save</button>
-            <button class="btn btn-ghost" id="share">Copy shareable link</button>
-          </div>
-        </div>
-        <p class="muted" style="margin-top:8px">Tip: set your values then click “Copy shareable link” to embed with your defaults in Notion.</p>
-      </details>
-
-    </div>
-  </div>
-
-<script>
-(function(){
-  const qs = new URLSearchParams(location.search);
-  const initial = {
-    work: +qs.get('work') || 25,
-    short: +qs.get('short') || 5,
-    long: +qs.get('long') || 15,
-    cycles: +qs.get('cycles') || 4,
-    auto: qs.get('auto') !== '0',
-    sound: qs.get('sound') !== '0',
-    theme: qs.get('theme') || 'auto',
-    title: qs.get('title') || 'Pomodoro',
-    autostart: qs.get('autostart') === '1',
-  };
-  // Persist overrides
-  const saved = JSON.parse(localStorage.getItem('pomow-v1')||'{}');
-  const cfg = { ...initial, ...saved };
-
-  // Theme
-  function applyTheme() {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const t = cfg.theme === 'auto' ? (prefersDark ? 'dark' : 'light') : cfg.theme;
-    document.documentElement.setAttribute('data-theme', t);
-  }
-  applyTheme();
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
-
-  // Elements
-  const e = (id)=>document.getElementById(id);
-  const titleEl = e('title'); const timeEl = e('time'); const subEl = e('subtext');
-  const arcEl = e('arc'); const toggleBtn = e('toggle'); const skipBtn = e('skip'); const resetBtn = e('reset');
-  const workBtn = e('mode-work'); const shortBtn = e('mode-short'); const longBtn = e('mode-long');
-  const autoBadge = e('autoBadge'); const soundBadge = e('soundBadge'); const notiBadge = e('notiBadge');
-  const fields = {
-    work:e('set-work'), short:e('set-short'), long:e('set-long'), cycles:e('set-cycles'), auto:e('set-auto'), sound:e('set-sound'), theme:e('set-theme'), title:e('set-title')
-  };
-  const saveBtn = e('save'); const shareBtn = e('share');
-
-  titleEl.textContent = cfg.title || 'Pomodoro';
-  fields.work.value = cfg.work; fields.short.value = cfg.short; fields.long.value = cfg.long; fields.cycles.value = cfg.cycles;
-  fields.auto.value = cfg.auto ? '1':'0'; fields.sound.value = cfg.sound ? '1':'0'; fields.theme.value = cfg.theme; fields.title.value = cfg.title;
-  autoBadge.textContent = `Auto‑advance: ${cfg.auto? 'on':'off'}`;
-  soundBadge.textContent = `Sound: ${cfg.sound? 'on':'off'}`;
-
-  // State
-  const Modes = { WORK:'work', SHORT:'short', LONG:'long' };
-  let mode = Modes.WORK;
-  let cyclesDone = 0; // number of completed work sessions in this set
-  let total = cfg.work*60; // total seconds for current period
-  let left = total; // seconds left
-  let ticking = false; let rafId = null; let lastTick = 0;
-
-  const CIRC = 2*Math.PI*54; // stroke length
-
-  function fmt(s){ s=Math.max(0,Math.round(s)); const m=Math.floor(s/60), sec=s%60; return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
-  function setProgress(){ const p = 1 - (left/total); arcEl.style.strokeDasharray = `${CIRC}`; arcEl.style.strokeDashoffset = `${CIRC*p}`; }
-  function updateUI(){ timeEl.textContent = fmt(left); setProgress(); subEl.textContent = (mode===Modes.WORK?`Cycle ${Math.min(cyclesDone+1, cfg.cycles)}/${cfg.cycles}`: (mode===Modes.SHORT? 'Short break':'Long break')); workBtn.setAttribute('aria-pressed', mode===Modes.WORK);
-    shortBtn.setAttribute('aria-pressed', mode===Modes.SHORT); longBtn.setAttribute('aria-pressed', mode===Modes.LONG);
-  }
-
-  function setMode(m, preset=true){ mode=m; total = (m===Modes.WORK?cfg.work: m===Modes.SHORT?cfg.short:cfg.long)*60; left = total; updateUI(); document.title = `${fmt(left)} • ${cfg.title}`; }
-
-  function beep(){ if(!cfg.sound) return; try{ const ctx=new (window.AudioContext||window.webkitAudioContext)(); const o=ctx.createOscillator(); const g=ctx.createGain(); o.type='sine'; o.frequency.setValueAtTime(880, ctx.currentTime); g.gain.setValueAtTime(.001, ctx.currentTime); g.gain.linearRampToValueAtTime(.06, ctx.currentTime+.02); g.gain.exponentialRampToValueAtTime(.0001, ctx.currentTime+.5); o.connect(g).connect(ctx.destination); o.start(); o.stop(ctx.currentTime+.5); }catch(e){}
-  }
-
-  function notify(msg){
-    if(Notification?.permission==='granted') new Notification(msg);
-  }
-
-  function next(){
-    if(mode===Modes.WORK){ cyclesDone++; if(cyclesDone>=cfg.cycles){ setMode(Modes.LONG); cyclesDone=0; } else { setMode(Modes.SHORT); } }
-    else { setMode(Modes.WORK); }
-  }
-
-  function tick(ts){ if(!ticking){ return; } if(!lastTick) lastTick=ts; const dt=(ts-lastTick)/1000; lastTick=ts; left-=dt; if(left<=0){ left=0; updateUI(); pause(); beep(); notify(`${mode===Modes.WORK? 'Work':'Break'} finished`); if(cfg.auto){ next(); play(); } return; } updateUI(); rafId=requestAnimationFrame(tick); }
-
-  function play(){ if(!ticking){ ticking=true; lastTick=0; toggleBtn.textContent='Pause'; rafId=requestAnimationFrame(tick);} }
-  function pause(){ ticking=false; toggleBtn.textContent='Start'; if(rafId) cancelAnimationFrame(rafId); }
-  function reset(){ pause(); setMode(mode); }
-
-  // Button events
-  toggleBtn.addEventListener('click', ()=>{ if(ticking) pause(); else play(); });
-  skipBtn.addEventListener('click', ()=>{ next(); updateUI(); });
-  resetBtn.addEventListener('click', reset);
-  workBtn.addEventListener('click', ()=>{ pause(); setMode(Modes.WORK); });
-  shortBtn.addEventListener('click', ()=>{ pause(); setMode(Modes.SHORT); });
-  longBtn.addEventListener('click', ()=>{ pause(); setMode(Modes.LONG); });
-
-  // Settings
-  saveBtn.addEventListener('click', ()=>{
-    cfg.work=limit(+fields.work.value||cfg.work,1,180);
-    cfg.short=limit(+fields.short.value||cfg.short,1,60);
-    cfg.long=limit(+fields.long.value||cfg.long,1,60);
-    cfg.cycles=limit(+fields.cycles.value||cfg.cycles,1,12);
-    cfg.auto = fields.auto.value==='1'; cfg.sound = fields.sound.value==='1'; cfg.theme = fields.theme.value; cfg.title = fields.title.value || 'Pomodoro';
-    localStorage.setItem('pomow-v1', JSON.stringify(cfg));
-    titleEl.textContent = cfg.title; autoBadge.textContent = `Auto‑advance: ${cfg.auto? 'on':'off'}`; soundBadge.textContent = `Sound: ${cfg.sound? 'on':'off'}`;
-    applyTheme(); setMode(mode); alert('Saved!');
-  });
-
-  shareBtn.addEventListener('click', ()=>{
-    const base = location.href.split('?')[0];
-    const params = new URLSearchParams({
-      work: cfg.work, short: cfg.short, long: cfg.long, cycles: cfg.cycles,
-      auto: cfg.auto? '1':'0', sound: cfg.sound? '1':'0', theme: cfg.theme, title: cfg.title
-    }).toString();
-    const url = `${base}?${params}`;
-    navigator.clipboard.writeText(url).then(()=>{ alert('Link copied! Use this in your Notion embed.'); });
-  });
-
-  function limit(v,min,max){ return Math.max(min, Math.min(max, v)); }
-
-  // Notifications request (one-time on user interaction)
-  document.addEventListener('click', ()=>{
-    if(window.Notification && Notification.permission==='default'){
-      Notification.requestPermission().then(p=>{ notiBadge.textContent = `Notifications: ${p==='granted'?'on':'off'}`; });
-    }
-  }, { once:true });
-
-  // Init
-  setMode(Modes.WORK);
-  if(cfg.autostart) play();
-  notiBadge.textContent = `Notifications: ${Notification?.permission==='granted'?'on':'off'}`;
-})();
-</script>
-</body>
-</html>
+    <
